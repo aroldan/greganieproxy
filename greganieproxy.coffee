@@ -1,6 +1,4 @@
 url = require('url')
-select = require('soupselect').select
-htmlparser = require("htmlparser")
 sys = require('sys')
 http = require('http')
 
