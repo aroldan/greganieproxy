@@ -11,7 +11,28 @@ sendRedirectToUrl = (res, url) ->
     'Location': "http://www.mywedding.com#{url}"
   res.end()
 
+injectScriptIntoHead = (html, scriptUrls = []) ->
+  scriptTags = []
+  for url in scriptUrls
+    scriptTags.push """
+    <script type="text/javascript" src="#{url}"></script>
+    """
+
+  scriptText = scriptTags.join("")
+  html.replace(/(<\/head[^>]*>)/, "\n#{scriptText}$1")
+
 server = http.createServer (req, serverResponse) ->
+  console.log "Got #{req.url}"
+  if req.url is "/sneakyscripts.js"
+    serverResponse.setHeader("Content-Type", "text/javascript")
+    serverResponse.write """
+    $(function() {
+      window.setInterval(cornify_add, 1000);
+    });
+    """
+    serverResponse.end()
+    return
+
   if req.url is "/"
     gReq = http.request
       hostname: 'www.mywedding.com'
@@ -23,7 +44,10 @@ server = http.createServer (req, serverResponse) ->
       res.on 'data', (chunk) ->
           data += chunk.toString()
       res.on 'end', () ->
-          serverResponse.write(data)
+          serverResponse.write injectScriptIntoHead data, [
+            "http://www.cornify.com/js/cornify.js"
+            "/sneakyscripts.js"
+          ]
           serverResponse.end()
     gReq.end()
   else
