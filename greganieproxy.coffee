@@ -20,12 +20,11 @@ injectScriptIntoHead = (html, scriptUrls = []) ->
   html.replace(/(<\/head[^>]*>)/, "\n#{scriptText}$1")
 
 server = http.createServer (req, serverResponse) ->
-  console.log "Got #{req.url}"
   if req.url is "/sneakyscripts.js"
     serverResponse.setHeader("Content-Type", "text/javascript")
     serverResponse.write """
     $(function() {
-      window.setInterval(cornify_add, 1000);
+      window.setInterval(cornify_add, 2500);
     });
     """
     serverResponse.end()
@@ -61,18 +60,15 @@ server = http.createServer (req, serverResponse) ->
     , (res) ->
       headers = res.headers
       isHtml = headers['content-type'] and headers['content-type'].match('text/html')
-      if isHtml
-        console.log "Is HTML, processing.."
-        serverResponse.setHeader("Content-Type", res.headers['content-type'])
-        res.on 'data', (chunk) ->
-          serverResponse.write chunk
-        res.on 'end', () ->
-          serverResponse.end()
-      else
-        urlCache[req.url] = true
-        console.log "Is not, redirecting..."
-        res.destroy() # terminate connection
-        sendRedirectToUrl(serverResponse, req.url)
+      if not isHtml
+        urlCache[req.url] = true #don't hit it again
+
+      console.log "Is HTML, processing.."
+      serverResponse.setHeader("Content-Type", res.headers['content-type'])
+      res.on 'data', (chunk) ->
+        serverResponse.write chunk
+      res.on 'end', () ->
+        serverResponse.end()
 
     gReq.end()
 
