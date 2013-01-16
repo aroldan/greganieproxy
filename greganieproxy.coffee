@@ -4,6 +4,10 @@ http = require('http')
 
 urlCache = {}
 
+SCRIPTS_TO_INJECT = [
+  "http://www.cornify.com/js/cornify.js"
+]
+
 sendRedirectToUrl = (res, url) ->
   res.writeHead 302,
     'Location': "http://www.mywedding.com#{url}"
@@ -41,10 +45,7 @@ server = http.createServer (req, serverResponse) ->
       res.on 'data', (chunk) ->
           data += chunk.toString()
       res.on 'end', () ->
-          serverResponse.write injectScriptIntoHead data, [
-            "http://www.cornify.com/js/cornify.js"
-            "/sneakyscripts.js"
-          ]
+          serverResponse.write injectScriptIntoHead data, SCRIPTS_TO_INJECT.concat(['sneakyscripts.js'])
           serverResponse.end()
     gReq.end()
   else
