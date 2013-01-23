@@ -44,6 +44,8 @@ server = http.createServer (req, serverResponse) ->
       data = ''
       res.on 'data', (chunk) ->
           data += chunk.toString()
+      res.on 'error', ->
+        serverResponse.end()
       res.on 'end', () ->
           serverResponse.write injectScriptIntoHead data, SCRIPTS_TO_INJECT.concat(['sneakyscripts.js'])
           serverResponse.end()
@@ -68,9 +70,14 @@ server = http.createServer (req, serverResponse) ->
       serverResponse.setHeader("Content-Type", res.headers['content-type'])
       res.on 'data', (chunk) ->
         serverResponse.write chunk
+      res.on 'error', ->
+        serverResponse.end()
       res.on 'end', () ->
         serverResponse.end()
 
     gReq.end()
+
+server.on 'error', (e) ->
+  console.log "Got error #{e}"
 
 server.listen(9000)
