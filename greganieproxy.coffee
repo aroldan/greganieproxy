@@ -1,11 +1,20 @@
 url = require('url')
-sys = require('sys')
 http = require('http')
+fs = require('fs')
+cf = require('coffee-script')
+path = require('path')
 
 urlCache = {}
 
 SCRIPTS_TO_INJECT = [
   "http://www.cornify.com/js/cornify.js"
+  "/scripts/cornify.coffee"
+  "/scripts/givemethetweets.coffee"
+]
+
+LOCAL_SCRIPTS = [
+  'cornify.coffee'
+  'givemethetweets.coffee'
 ]
 
 sendRedirectToUrl = (res, url) ->
@@ -24,14 +33,17 @@ injectScriptIntoHead = (html, scriptUrls = []) ->
   html.replace(/(<\/head[^>]*>)/, "\n#{scriptText}$1")
 
 server = http.createServer (req, serverResponse) ->
-  if req.url is "/sneakyscripts.js"
-    serverResponse.setHeader("Content-Type", "text/javascript")
-    serverResponse.write """
-    $(function() {
-      window.setInterval(cornify_add, 2500);
-    });
-    """
-    serverResponse.end()
+
+  # serve local coffeescript directly
+  if req.url.split("/")[2] in LOCAL_SCRIPTS
+    scriptname = req.url.split("/")[2]
+
+    filename = path.join(__dirname, "scripts", scriptname)
+    console.log "Serving #{filename} directly"
+    fs.readFile filename, "utf8", (err, data) ->
+      serverResponse.setHeader("Content-Type", "text/javascript")
+      serverResponse.write cf.compile(data)
+      serverResponse.end()
     return
 
   if req.url is "/"
@@ -47,7 +59,7 @@ server = http.createServer (req, serverResponse) ->
       res.on 'error', ->
         serverResponse.end()
       res.on 'end', () ->
-          serverResponse.write injectScriptIntoHead data, SCRIPTS_TO_INJECT.concat(['sneakyscripts.js'])
+          serverResponse.write injectScriptIntoHead data, SCRIPTS_TO_INJECT
           serverResponse.end()
     gReq.end()
   else
@@ -66,7 +78,7 @@ server = http.createServer (req, serverResponse) ->
       if not isHtml
         urlCache[req.url] = true #don't hit it again
 
-      console.log "Is HTML, processing.."
+      console.log "#{req.url} to #{req.connection.remoteAddress}"
       serverResponse.setHeader("Content-Type", res.headers['content-type'])
       res.on 'data', (chunk) ->
         serverResponse.write chunk
